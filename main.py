@@ -2,41 +2,81 @@ from src.graph_workflow import get_graph
 from langchain_core.messages import HumanMessage, AIMessage
 
 
+def run_chat_loop(graph):
+    """
+    Runs a continuous terminal chat loop using LangGraph's graph.invoke().
+    Exits when the user types 'exit' or 'quit'.
+    """
+    print("\n🚀 LangGraph Chat Loop Started! Type 'exit' or 'quit' to end the session.\n")
+    
+    # Initialize state with a blank message history
+    state = {"messages": [], 
+                "enhanced_query": None,
+                "needs_enhancement":False}
+    
+    # For Demo purposes, using normal thread-id's
+    config = {"configurable":{"thread_id":"1"}}
+
+    while True:
+        try:
+            # 1. Get user input
+            user_input = input("🤖 You: ").strip()
+            
+            # 2. Check for exit commands
+            if user_input.lower() in ["exit", "quit"]:
+                print("\n👋 Goodbye!")
+                break
+                
+            if not user_input:
+                continue
+
+            # 3. Append the new user message to the state
+            state["messages"].append( HumanMessage(content=user_input))
+
+            # 4. Invoke the graph
+            response = graph.invoke(state, config=config)
+
+            print(f"Full response: ")
+            print(response)
+
+            # 5. Extract and print only the latest assistant response
+            latest_response = response["messages"][-1]
+
+            print("\n🤖 Assistant:")
+
+            latest_resp_content = getattr(latest_response, "content")
+
+            if isinstance(latest_resp_content, list):
+                latest_message = latest_resp_content[0]['text']
+                print(latest_message)
+            else:
+                print(f"The latest_response is of type: {type(latest_response)}")
+                latest_response.pretty_print()
+
+            print() # Add an extra newline for readability
+
+            # 6. Update the local state for the next turn
+            state = response
+
+        except KeyboardInterrupt:
+            print("\n\n👋 Session interrupted. Goodbye!")
+            break
+        except Exception as e:
+            print(f"\n❌ An error occurred: {e}\n")
+
+
 if __name__ == "__main__":
     graph = get_graph()
 
-    input_query = "Explain AI Agents briefly."
-    # input_query = "Explain it in more detail."
+    # 1. Retrieve the raw PNG bytes from LangGraph
+    # # png_bytes = graph.get_graph().draw_mermaid_png()
 
-    response = graph.invoke(
-    {
-        "messages": [
-            HumanMessage(content=input_query)
-        ],
-        "enhanced_query": None,
-        "needs_enhancement":False
-    }
-)
-    # 1) For the input_query "Explain AI Agents briefly.", the output is:
+    # 2. Write the bytes into a local file
+    # # with open("3_graph_till_researcher.png", "wb") as f:
+    # #    f.write(png_bytes)
 
-    # Query passed downstream: Explain AI Agents briefly. 
-    # ------------------------------------------------------------------------------------------------------------------------------------------------------
-    # Full Response: {'messages': [HumanMessage(content='Explain AI Agents briefly.', additional_kwargs={}, response_metadata={}, id='74483udfu-9738-0aew-a7c1-93893ne992093')], 'enhanced_query': None, 'needs_enhancement': False}
-
-    # No enhancement was needed, so the same input query was passed downstream as-is.
+    run_chat_loop(graph)
 
 
-
-    # 2) For the input_query "Explain it in more detail.", the output is:
-
-    # Query passed downstream: Explain the previous topic in more detail.
-    # ------------------------------------------------------------------------------------------------------------------------------------------------------
-    # Full Response: {'messages': [HumanMessage(content='Explain it in more detail.', additional_kwargs={}, response_metadata={}, id='74483udfu-9738-0aew-a7c1-93893ne992094')], 'enhanced_query': 'Explain the previous topic in more detail.', 'needs_enhancement': True}
-
-    # Enhancement was needed, so the input query was enhanced to "Explain the previous topic in more detail." and passed downstream.
-    # NOTE: Since it doesn't have full convo history yet, it was just enhanced to explain previous topic instead of actually mentioning the specific topic.
-
-    print("-"*150)
-    print(f"Full Response: {response}")
 
     

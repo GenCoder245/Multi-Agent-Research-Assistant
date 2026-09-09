@@ -16,6 +16,7 @@ ROUTING_PROMPT = """
     """
 
 
+
 ENHANCER_PROMPT = """
     You are a query enhancement component.
 
@@ -31,3 +32,39 @@ ENHANCER_PROMPT = """
 
     If the latest query is already self-contained, return it unchanged.
     """
+
+
+
+RESEARCH_SYSTEM_PROMPT = """
+    You are a technical research agent.
+
+    Your job is to research the user's question using the Tavily search tool
+    when current or external information is needed.
+
+    Rules:
+    - Use Tavily when web research is useful.
+    - Do not invent facts.
+    - Base your answer on the information obtained from the search results.
+    - Provide a concise research-oriented response.
+    """
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
