@@ -6,34 +6,37 @@ if __name__ == "__main__":
     graph = get_graph()
 
     input_query = "Explain AI Agents briefly."
+    # input_query = "Explain it in more detail."
 
-    response = graph.invoke({"messages":[
-        HumanMessage(content=input_query)
-    ]})
+    response = graph.invoke(
+    {
+        "messages": [
+            HumanMessage(content=input_query)
+        ],
+        "enhanced_query": None,
+        "needs_enhancement":False
+    }
+)
+    # 1) For the input_query "Explain AI Agents briefly.", the output is:
+
+    # Query passed downstream: Explain AI Agents briefly. 
+    # ------------------------------------------------------------------------------------------------------------------------------------------------------
+    # Full Response: {'messages': [HumanMessage(content='Explain AI Agents briefly.', additional_kwargs={}, response_metadata={}, id='74483udfu-9738-0aew-a7c1-93893ne992093')], 'enhanced_query': None, 'needs_enhancement': False}
+
+    # No enhancement was needed, so the same input query was passed downstream as-is.
+
+
+
+    # 2) For the input_query "Explain it in more detail.", the output is:
+
+    # Query passed downstream: Explain the previous topic in more detail.
+    # ------------------------------------------------------------------------------------------------------------------------------------------------------
+    # Full Response: {'messages': [HumanMessage(content='Explain it in more detail.', additional_kwargs={}, response_metadata={}, id='74483udfu-9738-0aew-a7c1-93893ne992094')], 'enhanced_query': 'Explain the previous topic in more detail.', 'needs_enhancement': True}
+
+    # Enhancement was needed, so the input query was enhanced to "Explain the previous topic in more detail." and passed downstream.
+    # NOTE: Since it doesn't have full convo history yet, it was just enhanced to explain previous topic instead of actually mentioning the specific topic.
 
     print("-"*150)
     print(f"Full Response: {response}")
-
-    # Full Response: {'messages': [HumanMessage(content='Explain AI Agents briefly.', additional_kwargs={}, response_metadata={}, id='dfwijo-83u3jdhe-3389kjcs'), 
-    # AIMessage(content=[{'type': 'text', 'text': '**AI Agents** are artificial intelligence programs designed to **perceive** their environment, **make decisions**, and **take actions** autonomously to achieve a specific goal. \n\nUnlike traditional software that only follows strict, pre-written rules, or standard chatbots that just answer questions, AI agents can reason, plan, and use tools to get work done.\n\n### Key Components of an AI Agent:\n1. **Perception:** Taking in data (text, images, sensor data, or user prompts).\n2. **Reasoning/Brain:** Using an LLM (Large Language Model) or algorithm to plan the steps needed to reach the goal.\n3. **Action:** Executing tasks (e.g., writing code, searching the web, sending an email, or moving a robotic arm).\n4. **Memory:** Remembering past interactions and results to learn and adjust its strategy.\n\n### Real-World Example:\nInstead of you having to search for flights, compare prices, and book a ticket yourself, you could tell an **AI travel agent**: *"Book me a weekend trip to Chicago under $300."* The agent will autonomously browse the web, make choices, and complete the booking for you.', 
-    # 'extras': {'signature': 'jfiewr389r2398ud230932eCjzAGbD7EkKFefTHvUKWmqlDsUmUTqQOH/qIx9aaUSvZfe89ru94u3h49u9udj3j938'}}], additional_kwargs={}, 
-    # response_metadata={'finish_reason': 'STOP', 'model_name': 'gemini-3.5-flash-lite', 'safety_ratings': [], 'model_provider': 'google_genai'}, 
-    # id='lc_run--003iiedji-8n3c-7d12-2637j-11c1538738huhu-0', tool_calls=[], invalid_tool_calls=[], 
-    # usage_metadata={'input_tokens': 6, 'output_tokens': 250, 'total_tokens': 256, 'input_token_details': {'cache_read': 0}})]}
-            
-
-
-    if isinstance(response['messages'][-1], AIMessage):
-        print("-"*150)
-        print(f"The response is an AIMessage class.")
-
-        # response['messages'][-1].content[0]['text'] - This is how to extract text response for Gemini 3.x models
-        print("*"*150)
-        print(f"The actual response: {response['messages'][-1].content[0]['text']}")
-        
-    else:
-        print("-"*150)
-        print(f"The response is not an AIMessage class. It is of type: {type(response['messages'])}")
-
 
     
