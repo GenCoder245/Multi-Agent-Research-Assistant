@@ -2,7 +2,7 @@ from src.graph_workflow import get_graph
 from langchain_core.messages import HumanMessage, AIMessage
 
 
-def run_chat_loop(graph):
+def run_chat_loop(graph, chat_thread_id):
     """
     Runs a continuous terminal chat loop using LangGraph's graph.invoke().
     Exits when the user types 'exit' or 'quit'.
@@ -12,10 +12,12 @@ def run_chat_loop(graph):
     # Initialize state with a blank message history
     state = {"messages": [], 
                 "enhanced_query": None,
-                "needs_enhancement":False}
+                "needs_enhancement":False,
+                "next_node":None,
+                "supervisor_reasoning":None}
     
     # For Demo purposes, using normal thread-id's
-    config = {"configurable":{"thread_id":"1"}}
+    config = {"configurable":{"thread_id":chat_thread_id}}
 
     while True:
         try:
@@ -68,14 +70,21 @@ def run_chat_loop(graph):
 if __name__ == "__main__":
     graph = get_graph()
 
-    # 1. Retrieve the raw PNG bytes from LangGraph
-    # # png_bytes = graph.get_graph().draw_mermaid_png()
+    chat_thread_id = "5"
 
-    # 2. Write the bytes into a local file
-    # # with open("3_graph_till_researcher.png", "wb") as f:
-    # #    f.write(png_bytes)
+    # Set it to True during initial Run alone to get the graph as mermaid png.
+    save_graph : bool = False
 
-    run_chat_loop(graph)
+    if save_graph:
+        # 1. Retrieve the raw PNG bytes from LangGraph
+        png_bytes = graph.get_graph().draw_mermaid_png()
+
+        # 2. Write the bytes into a local file
+        with open("4_graph_till_supervisor.png", "wb") as f:
+            f.write(png_bytes)
+
+    # Run the Chat loop
+    run_chat_loop(graph=graph, chat_thread_id=chat_thread_id)
 
 
 

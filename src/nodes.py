@@ -1,8 +1,8 @@
 from langchain_core.messages import SystemMessage, HumanMessage
 
-from src.schemas import State, QueryRouting
+from src.schemas import State, QueryRouting, SupervisorDecision
 from src.llm_models import llm
-from src.prompts import ROUTING_PROMPT, ENHANCER_PROMPT, RESEARCH_SYSTEM_PROMPT
+from src.prompts import ROUTING_PROMPT, ENHANCER_PROMPT, RESEARCH_SYSTEM_PROMPT, SUPERVISOR_PROMPT, SUPERVISOR_HUMAN_FINAL_PROMPT
 from src.tools import tools_list
 
 from langgraph.prebuilt import ToolNode
@@ -10,7 +10,9 @@ from langgraph.prebuilt import ToolNode
 router_llm = llm.with_structured_output(schema=QueryRouting,
                                         method = 'json_schema')
 
-research_llm = llm.bind_tools(tools_list)       
+research_llm = llm.bind_tools(tools_list)
+
+supervisor_llm = llm.with_structured_output(SupervisorDecision)
 
 
 # Nodes defined below:
@@ -56,6 +58,7 @@ def research_agent_node(state: State):
     query = state.get("enhanced_query")
 
     if query:
+        
         messages = [
             SystemMessage(content=RESEARCH_SYSTEM_PROMPT),
             *state["messages"][:-1], # Conversation history till last before message
@@ -82,6 +85,46 @@ def research_agent_node(state: State):
 
 
 research_tools_node = ToolNode(tools=tools_list)
+
+
+
+
+def supervisor_node(state: State):
+
+    messages = state["messages"]
+
+    query = state.get("enhanced_query")
+
+    # Final Prompt sent as HumanMessage after Supervisor gets results from Research Agent
+    # To avoid getting the "Gemini model doesn't support pre-filling" error.
+    # Will get the error when the Final Message in messages list is an AIMessage.
+
+    if query:
+        response = supervisor_llm.invoke(
+            [
+                SystemMessage(content=SUPERVISOR_PROMPT),
+                *messages[:-1], # Conversation history till last before message
+                HumanMessage(content=query), # Instead of last message(non-enhanced query), use the enhanced query as the latest message
+                # The final request turn must be a user message or a function response.
+                HumanMessage(content=SUPERVISOR_HUMAN_FINAL_PROMPT)
+            ]
+        )
+    else:
+        response = supervisor_llm.invoke(
+            [
+                SystemMessage(content=SUPERVISOR_PROMPT),
+                *messages,
+                # The final request turn must be a user message or a function response.
+                HumanMessage(content=SUPERVISOR_HUMAN_FINAL_PROMPT)
+            ]
+        )         
+
+    return {
+        "next_node": response.next,
+        "supervisor_reasoning": response.reason
+    }
+
+
 
 
 

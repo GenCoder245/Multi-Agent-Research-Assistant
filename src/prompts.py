@@ -40,6 +40,8 @@ RESEARCH_SYSTEM_PROMPT = """
 
     Your job is to research the user's question using the Tavily search tool
     when current or external information is needed.
+    If the user's question can be answered using your internal knowledge, you may do so
+    without using the Tavily search tool.
 
     Rules:
     - Use Tavily when web research is useful.
@@ -50,6 +52,37 @@ RESEARCH_SYSTEM_PROMPT = """
 
 
 
+
+SUPERVISOR_PROMPT = """
+    You are the supervisor of a technical research workflow.
+    Your job is to decide what should happen next.
+
+    Available options:
+
+    - research:
+    Delegate the task to the Research Agent when external/current
+    information is required and research has not yet been completed.
+
+    - finish:
+    End the workflow when the Research Agent has completed the
+    required research and there is no additional specialist work
+    to perform.
+
+    Rules:
+    - Do not answer the user's question yourself.
+    - Do not perform research yourself.
+    - Delegate work to the Research Agent.
+    - Once the Research Agent has completed its research, choose finish.
+    """
+
+
+# Final Prompt sent as HumanMessage after Supervisor gets results from Research Agent
+# To avoid getting the "Gemini model doesn't support pre-filling" error.
+ 
+SUPERVISOR_HUMAN_FINAL_PROMPT = """
+    Based on the conversation and work completed so far,
+    decide what should happen next.
+"""
 
 
 
