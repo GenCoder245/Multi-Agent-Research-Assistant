@@ -15,8 +15,7 @@ def run_chat_loop(graph, chat_thread_id):
                 "needs_enhancement":False,
                 "next_node":None,
                 "supervisor_reasoning":None}
-    
-    # For Demo purposes, using normal thread-id's
+
     config = {"configurable":{"thread_id":chat_thread_id}}
 
     while True:
@@ -70,7 +69,8 @@ def run_chat_loop(graph, chat_thread_id):
 if __name__ == "__main__":
     graph = get_graph()
 
-    chat_thread_id = "5"
+    # For Demo purposes, using normal thread-id's
+    chat_thread_id = "11"
 
     # Set it to True during initial Run alone to get the graph as mermaid png.
     save_graph : bool = False

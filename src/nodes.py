@@ -1,4 +1,4 @@
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage, AIMessage
 
 from src.schemas import State, QueryRouting, SupervisorDecision
 from src.llm_models import llm
@@ -56,18 +56,44 @@ def query_enhancer_node(state:State):
 def research_agent_node(state: State):
     # query = state.get("enhanced_query") or state["messages"][-1].content
     query = state.get("enhanced_query")
+    state_messages = state['messages']
 
     if query:
+        # If the last message in the state is a ToolMessage, we should include it in the messages list for context.
+        if isinstance(state_messages[-1], ToolMessage):
+
+            print("*"*100)
+            print("Researcher: Last message is a ToolMessage. Including it in the research agent's context.")
+            print(f"Researcher: ToolMessage content: {state_messages[-1]}")
+            print("*"*100)
+
+            messages = [
+                        SystemMessage(content=RESEARCH_SYSTEM_PROMPT),
+                        *state_messages,
+                        HumanMessage(content=query), # Using the enhanced query as the latest message
+                    ]
+        else: # For HumanMessage, we can replace the last message with the enhanced query.
+
+            print("*"*100)
+            print(f"Researcher: Last message is {type(state_messages[-1])}. Including it in the research agent's context.")
+            print(f"Researcher: {type(state_messages[-1])} content: {state_messages[-1]}")
+            print("*"*100)
+
+            messages = [
+                        SystemMessage(content=RESEARCH_SYSTEM_PROMPT),
+                        *state_messages[:-1], # Conversation history till last before message
+                        HumanMessage(content=query), # Instead of last message(non-enhanced query), use the enhanced query as the latest message
+                    ]
         
-        messages = [
-            SystemMessage(content=RESEARCH_SYSTEM_PROMPT),
-            *state["messages"][:-1], # Conversation history till last before message
-            HumanMessage(content=query), # Instead of last message(non-enhanced query), use the enhanced query as the latest message
-        ]
     else:
+        print("*"*100)
+        print("Researcher: Using Full convo history....")
+        print(f"Researcher: Full convo last message content: {state_messages[-1]}")
+        print("*"*100)
+
         messages = [
             SystemMessage(content=RESEARCH_SYSTEM_PROMPT),
-            *state["messages"], # Full Conversation history
+            *state_messages, # Full Conversation history
         ]
 
 
@@ -91,29 +117,54 @@ research_tools_node = ToolNode(tools=tools_list)
 
 def supervisor_node(state: State):
 
-    messages = state["messages"]
+    state_messages = state["messages"]
 
     query = state.get("enhanced_query")
-
-    # Final Prompt sent as HumanMessage after Supervisor gets results from Research Agent
-    # To avoid getting the "Gemini model doesn't support pre-filling" error.
-    # Will get the error when the Final Message in messages list is an AIMessage.
+    
 
     if query:
-        response = supervisor_llm.invoke(
-            [
-                SystemMessage(content=SUPERVISOR_PROMPT),
-                *messages[:-1], # Conversation history till last before message
-                HumanMessage(content=query), # Instead of last message(non-enhanced query), use the enhanced query as the latest message
-                # The final request turn must be a user message or a function response.
-                HumanMessage(content=SUPERVISOR_HUMAN_FINAL_PROMPT)
-            ]
-        )
+        if isinstance(state_messages[-1], HumanMessage):
+            print("="*120)
+            print("Supervisor: Last message is a HumanMessage.")
+            print(f"Supervisor: HumanMessage content: {state_messages[-1]}")
+            print("="*120)
+            
+            response = supervisor_llm.invoke(
+                [
+                    SystemMessage(content=SUPERVISOR_PROMPT),
+                    *state_messages[:-1], # Conversation history till last before message
+                    HumanMessage(content=query), # Instead of last message(non-enhanced query), use the enhanced query as the latest message
+                    # The final request turn must be a user message or a function response to avoid getting the "Gemini model doesn't support pre-filling" error..
+                    # Will get that error when the Final Message in messages list is an AIMessage.
+                    HumanMessage(content=SUPERVISOR_HUMAN_FINAL_PROMPT)
+                ]
+            )
+        else:
+
+            print("="*120)
+            print(f"Supervisor: Last message is {type(state_messages[-1])}. ")
+            print(f"Supervisor: {type(state_messages[-1])} content: {state_messages[-1]}")
+            print("="*120)
+             
+            response = supervisor_llm.invoke(
+                        [
+                            SystemMessage(content=SUPERVISOR_PROMPT),
+                            *state_messages,
+                            HumanMessage(content=query), # Instead of last message(non-enhanced query), use the enhanced query as the latest message
+                            # The final request turn must be a user message or a function response.
+                            HumanMessage(content=SUPERVISOR_HUMAN_FINAL_PROMPT)
+                        ]
+                    )
     else:
+        print("="*120)
+        print("Supervisor: Using Full convo history....")
+        print(f"Supervisor: Full convo last message content: {state_messages[-1]}")
+        print("="*120)
+         
         response = supervisor_llm.invoke(
             [
                 SystemMessage(content=SUPERVISOR_PROMPT),
-                *messages,
+                *state_messages,
                 # The final request turn must be a user message or a function response.
                 HumanMessage(content=SUPERVISOR_HUMAN_FINAL_PROMPT)
             ]
