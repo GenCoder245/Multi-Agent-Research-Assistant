@@ -23,5 +23,5 @@ class QueryRouting(BaseModel):
 
 
 class SupervisorDecision(BaseModel):
-    next: Literal["research", "finish"] = Field(description="The next step in the workflow.")
+    next: Literal["research","analysis","finish"] = Field(description="The next step in the workflow.")
     reason: str = Field("The reason why supervisor thinks the specified node should be invoked next.")

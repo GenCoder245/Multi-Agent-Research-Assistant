@@ -2,12 +2,12 @@ from langgraph.graph.state import StateGraph, START, END
 from langgraph.prebuilt import tools_condition
 from langgraph.checkpoint.memory import MemorySaver
 
-from src.nodes import query_router_node, query_enhancer_node, research_agent_node, research_tools_node, supervisor_node
+from src.nodes import query_router_node, query_enhancer_node, research_agent_node, research_tools_node, supervisor_node, analysis_agent_node
 from src.route_functions import route_after_query_router, route_after_research, route_from_supervisor
 from src.schemas import State
 
 
-def get_graph():
+def get_graph(memory_checkpointer):
     builder = StateGraph(state_schema=State)
 
     # --------------------------------
@@ -28,8 +28,15 @@ def get_graph():
     # Supervisor
     # --------------------------------
 
-    # New Supervisor Agent node
+    # Supervisor Agent node
     builder.add_node("supervisor", supervisor_node)
+
+
+    # --------------------------------
+    # Analysis Agent
+    # --------------------------------
+
+    builder.add_node("analysis_agent", analysis_agent_node)
 
     # --------------------------------
     # START
@@ -48,7 +55,6 @@ def get_graph():
                                 route_after_query_router,
                                 {
                                     "enhancer":  "query_enhancer",
-                                    # "next": "research_agent"
                                     "next": "supervisor"
                                 })
 
@@ -57,7 +63,6 @@ def get_graph():
     # --------------------------------
 
     # Enhancer → Supervisor Agent
-    # builder.add_edge("query_enhancer","research_agent")
     builder.add_edge("query_enhancer","supervisor")
 
 
@@ -71,6 +76,7 @@ def get_graph():
                 route_from_supervisor,
                 {
                     "research":"research_agent",
+                    "analysis": "analysis_agent",
                     "finish":END,
                 }
     )
@@ -83,7 +89,6 @@ def get_graph():
     # Research Agent → Tool or Supervisor
     builder.add_conditional_edges(
         "research_agent",
-        #tools_condition,
         route_after_research,
         {
             "tools": "research_tools",
@@ -97,11 +102,10 @@ def get_graph():
 
     # Tool → Research Agent
     builder.add_edge("research_tools","research_agent")
+    builder.add_edge("analysis_agent",  "supervisor")
+    
 
-    # Start Adding Memory checkpointer. For now, keeping an In-memory checkpointer.
-    memory = MemorySaver()
-
-    graph = builder.compile(checkpointer=memory)
+    graph = builder.compile(checkpointer=memory_checkpointer)
 
     return graph
 

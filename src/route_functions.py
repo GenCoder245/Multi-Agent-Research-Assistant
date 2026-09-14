@@ -23,6 +23,13 @@ def route_from_supervisor(state: State):
     if state["next_node"] == "research":
         return "research"
 
+    if state["next_node"] == "analysis":
+            return "analysis"
+
     return "finish"
+
+
+
+
 
 

@@ -1,5 +1,6 @@
 from src.graph_workflow import get_graph
 from langchain_core.messages import HumanMessage, AIMessage
+from langgraph.checkpoint.memory import MemorySaver
 
 
 def run_chat_loop(graph, chat_thread_id):
@@ -14,7 +15,8 @@ def run_chat_loop(graph, chat_thread_id):
                 "enhanced_query": None,
                 "needs_enhancement":False,
                 "next_node":None,
-                "supervisor_reasoning":None}
+                "supervisor_reasoning":None,
+            }
 
     config = {"configurable":{"thread_id":chat_thread_id}}
 
@@ -67,11 +69,14 @@ def run_chat_loop(graph, chat_thread_id):
 
 
 if __name__ == "__main__":
-    graph = get_graph()
 
     # For Demo purposes, using normal thread-id's
-    chat_thread_id = "11"
+    chat_thread_id = "15"
+    # For Demo purposes, keeping an In-memory checkpointer.
+    memory = MemorySaver()
 
+    graph = get_graph(memory_checkpointer=memory)
+    
     # Set it to True during initial Run alone to get the graph as mermaid png.
     save_graph : bool = False
 
@@ -80,7 +85,7 @@ if __name__ == "__main__":
         png_bytes = graph.get_graph().draw_mermaid_png()
 
         # 2. Write the bytes into a local file
-        with open("4_graph_till_supervisor.png", "wb") as f:
+        with open("5_graph_till_analyser.png", "wb") as f:
             f.write(png_bytes)
 
     # Run the Chat loop

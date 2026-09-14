@@ -2,7 +2,8 @@ from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage, AI
 
 from src.schemas import State, QueryRouting, SupervisorDecision
 from src.llm_models import llm
-from src.prompts import ROUTING_PROMPT, ENHANCER_PROMPT, RESEARCH_SYSTEM_PROMPT, SUPERVISOR_PROMPT, SUPERVISOR_HUMAN_FINAL_PROMPT
+from src.prompts import ROUTING_PROMPT, ENHANCER_PROMPT, RESEARCH_SYSTEM_PROMPT, SUPERVISOR_PROMPT
+from src.prompts import SUPERVISOR_HUMAN_FINAL_PROMPT, ANALYSER_PROMPT
 from src.tools import tools_list
 
 from langgraph.prebuilt import ToolNode
@@ -72,8 +73,21 @@ def research_agent_node(state: State):
                         *state_messages,
                         HumanMessage(content=query), # Using the enhanced query as the latest message
                     ]
-        else: # For HumanMessage, we can replace the last message with the enhanced query.
+            
+        elif isinstance(state_messages[-1], AIMessage):
 
+            print("*"*100)
+            print(f"Researcher: Last message is {type(state_messages[-1])}. Including it in the research agent's context.")
+            print(f"Researcher: {type(state_messages[-1])} content: {state_messages[-1]}")
+            print("*"*100)
+
+            messages = [
+                        SystemMessage(content=RESEARCH_SYSTEM_PROMPT),
+                        *state_messages, # Conversation history till last before message
+                        HumanMessage(content=query), # Instead of last message(non-enhanced query), use the enhanced query as the latest message
+                    ]
+            
+        elif isinstance(state_messages[-1], HumanMessage): # For HumanMessage, we can replace the last message with the enhanced query.:
             print("*"*100)
             print(f"Researcher: Last message is {type(state_messages[-1])}. Including it in the research agent's context.")
             print(f"Researcher: {type(state_messages[-1])} content: {state_messages[-1]}")
@@ -84,7 +98,7 @@ def research_agent_node(state: State):
                         *state_messages[:-1], # Conversation history till last before message
                         HumanMessage(content=query), # Instead of last message(non-enhanced query), use the enhanced query as the latest message
                     ]
-        
+
     else:
         print("*"*100)
         print("Researcher: Using Full convo history....")
@@ -103,6 +117,7 @@ def research_agent_node(state: State):
     # or
     # A Final AIMessage with the answer if no (further) tool calls are needed.
 
+    response.name = "Researcher_node"
     return {
         "messages": [response]
     }
@@ -174,6 +189,35 @@ def supervisor_node(state: State):
         "next_node": response.next,
         "supervisor_reasoning": response.reason
     }
+
+
+
+
+
+def analysis_agent_node(state: State):
+
+    messages = [
+        SystemMessage(content=ANALYSER_PROMPT),
+        *state["messages"],
+        HumanMessage(
+            content="""
+            Analyze the research findings produced so far.
+            """
+        )
+    ]
+
+    response = llm.invoke(messages)
+
+    response.name = "Analyser_node"
+    return {
+        "messages": [response]
+    }
+
+
+
+
+
+
 
 
 
