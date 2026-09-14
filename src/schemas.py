@@ -14,6 +14,8 @@ class State(TypedDict):
     next_node : str | None
     supervisor_reasoning: str | None
 
+    current_stage: str | None
+
 
 class QueryRouting(BaseModel):
     needs_enhancement: bool = Field(
@@ -23,5 +25,5 @@ class QueryRouting(BaseModel):
 
 
 class SupervisorDecision(BaseModel):
-    next: Literal["research","analysis","finish"] = Field(description="The next step in the workflow.")
+    next: Literal["research","analysis","summary","finish"] = Field(description="The next step in the workflow.")
     reason: str = Field("The reason why supervisor thinks the specified node should be invoked next.")

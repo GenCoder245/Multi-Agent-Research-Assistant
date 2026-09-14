@@ -16,6 +16,7 @@ def run_chat_loop(graph, chat_thread_id):
                 "needs_enhancement":False,
                 "next_node":None,
                 "supervisor_reasoning":None,
+                "current_stage":None,
             }
 
     config = {"configurable":{"thread_id":chat_thread_id}}
@@ -71,7 +72,7 @@ def run_chat_loop(graph, chat_thread_id):
 if __name__ == "__main__":
 
     # For Demo purposes, using normal thread-id's
-    chat_thread_id = "15"
+    chat_thread_id = "21"
     # For Demo purposes, keeping an In-memory checkpointer.
     memory = MemorySaver()
 
@@ -85,7 +86,7 @@ if __name__ == "__main__":
         png_bytes = graph.get_graph().draw_mermaid_png()
 
         # 2. Write the bytes into a local file
-        with open("5_graph_till_analyser.png", "wb") as f:
+        with open("6_graph_till_summarizer.png", "wb") as f:
             f.write(png_bytes)
 
     # Run the Chat loop
