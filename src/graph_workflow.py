@@ -2,12 +2,21 @@ from langgraph.graph.state import StateGraph, START, END
 from langgraph.prebuilt import tools_condition
 from langgraph.checkpoint.memory import MemorySaver
 
-from src.nodes import query_router_node, query_enhancer_node, research_agent_node, research_tools_node, supervisor_node, analysis_agent_node, summary_agent_node
+from src.nodes import query_router_node, query_enhancer_node, research_agent_node, supervisor_node, analysis_agent_node, summary_agent_node
+from src.nodes import research_tools_node
+from src.nodes import initialize_mcp_tools
 from src.route_functions import route_after_query_router, route_after_research, route_from_supervisor
 from src.schemas import State
 
 
-def get_graph(memory_checkpointer):
+def get_graph(memory_checkpointer, mcp_tools_list):
+
+    research_tools_node_with_mcp = None
+    if mcp_tools_list:
+        print(f"Graph: mcp_tools_list length: {len(mcp_tools_list)}")
+        research_tools_node_with_mcp = initialize_mcp_tools(mcp_tools_list)
+        # print(f"Graph: research_tools_node_with_mcp: {research_tools_node_with_mcp}")
+
     builder = StateGraph(state_schema=State)
 
     # --------------------------------
@@ -22,7 +31,16 @@ def get_graph(memory_checkpointer):
     # --------------------------------
 
     builder.add_node("research_agent", research_agent_node)
-    builder.add_node("research_tools", research_tools_node)
+
+    # If MCP tool node available(only if mcp tools available) then,
+    # initialize ToolNode with tools received via MCP.
+
+    if research_tools_node_with_mcp:
+        print(f"Graph: Assigning research_tools_node_with_mcp as research tool node")  
+        builder.add_node("research_tools", research_tools_node_with_mcp)
+    else:
+        print(f"Graph: Assigning research_tools_node as research tool node")
+        builder.add_node("research_tools", research_tools_node)
 
     # --------------------------------
     # Supervisor

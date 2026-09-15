@@ -2,10 +2,13 @@ from src.graph_workflow import get_graph
 from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.checkpoint.memory import MemorySaver
 
+from src.tools_mcp import setup_mcp_tools
+import asyncio
 
-def run_chat_loop(graph, chat_thread_id):
+
+async def run_chat_loop(graph, chat_thread_id):
     """
-    Runs a continuous terminal chat loop using LangGraph's graph.invoke().
+    Runs a continuous terminal chat loop using LangGraph's graph.ainvoke().
     Exits when the user types 'exit' or 'quit'.
     """
     print("\n🚀 LangGraph Chat Loop Started! Type 'exit' or 'quit' to end the session.\n")
@@ -38,7 +41,7 @@ def run_chat_loop(graph, chat_thread_id):
             state["messages"].append( HumanMessage(content=user_input))
 
             # 4. Invoke the graph
-            response = graph.invoke(state, config=config)
+            response = await graph.ainvoke(state, config=config)
 
             print(f"Full response: ")
             print(response)
@@ -69,17 +72,18 @@ def run_chat_loop(graph, chat_thread_id):
             print(f"\n❌ An error occurred: {e}\n")
 
 
-if __name__ == "__main__":
-
+async def main():
     # For Demo purposes, using normal thread-id's
-    chat_thread_id = "21"
+    chat_thread_id = "27"
     # For Demo purposes, keeping an In-memory checkpointer.
     memory = MemorySaver()
 
-    graph = get_graph(memory_checkpointer=memory)
-    
+    # mcp_client is for future purposes.
+    mcp_client, mcp_tools = await setup_mcp_tools()
+    graph = get_graph(memory_checkpointer=memory, mcp_tools_list=mcp_tools)
+
     # Set it to True during initial Run alone to get the graph as mermaid png.
-    save_graph : bool = False
+    save_graph: bool = False
 
     if save_graph:
         # 1. Retrieve the raw PNG bytes from LangGraph
@@ -90,7 +94,11 @@ if __name__ == "__main__":
             f.write(png_bytes)
 
     # Run the Chat loop
-    run_chat_loop(graph=graph, chat_thread_id=chat_thread_id)
+    await run_chat_loop(graph=graph, chat_thread_id=chat_thread_id)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
 
 
 

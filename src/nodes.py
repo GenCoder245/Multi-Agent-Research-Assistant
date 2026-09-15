@@ -11,9 +11,17 @@ from langgraph.prebuilt import ToolNode
 router_llm = llm.with_structured_output(schema=QueryRouting,
                                         method = 'json_schema')
 
-research_llm = llm.bind_tools(tools_list)
+# research_llm = llm.bind_tools(tools_list)
 
 supervisor_llm = llm.with_structured_output(SupervisorDecision)
+
+research_llm = None
+
+def initialize_mcp_tools(mcp_tools_list):
+    global research_llm
+    research_llm = llm.bind_tools(mcp_tools_list)
+    research_tools_node_mcp = ToolNode(tools=mcp_tools_list)
+    return research_tools_node_mcp
 
 
 # Nodes defined below:
@@ -69,10 +77,10 @@ def supervisor_node(state: State):
 
     if query:
         if isinstance(state_messages[-1], HumanMessage):
-            print("="*120)
-            print("Supervisor: Last message is a HumanMessage.")
-            print(f"Supervisor: HumanMessage content: {state_messages[-1]}")
-            print("="*120)
+            #print("="*120)
+            #print("Supervisor: Last message is a HumanMessage.")
+            #print(f"Supervisor: HumanMessage content: {state_messages[-1]}")
+            #print("="*120)
             
             response = supervisor_llm.invoke(
                 [
@@ -86,10 +94,10 @@ def supervisor_node(state: State):
             )
         else:
 
-            print("="*120)
-            print(f"Supervisor: Last message is {type(state_messages[-1])}. ")
-            print(f"Supervisor: {type(state_messages[-1])} content: {state_messages[-1]}")
-            print("="*120)
+            #print("="*120)
+            #print(f"Supervisor: Last message is {type(state_messages[-1])}. ")
+            #print(f"Supervisor: {type(state_messages[-1])} content: {state_messages[-1]}")
+            #print("="*120)
              
             response = supervisor_llm.invoke(
                         [
@@ -101,10 +109,10 @@ def supervisor_node(state: State):
                         ]
                     )
     else:
-        print("="*120)
-        print("Supervisor: Using Full convo history....")
-        print(f"Supervisor: Full convo last message content: {state_messages[-1]}")
-        print("="*120)
+        #print("="*120)
+        #print("Supervisor: Using Full convo history....")
+        #print(f"Supervisor: Full convo last message content: {state_messages[-1]}")
+        #print("="*120)
          
         response = supervisor_llm.invoke(
             [
@@ -130,10 +138,10 @@ def research_agent_node(state: State):
         # If the last message in the state is a ToolMessage, we should include it in the messages list for context.
         if isinstance(state_messages[-1], ToolMessage):
 
-            print("*"*100)
-            print("Researcher: Last message is a ToolMessage. Including it in the research agent's context.")
-            print(f"Researcher: ToolMessage content: {state_messages[-1]}")
-            print("*"*100)
+            #print("*"*100)
+            #print("Researcher: Last message is a ToolMessage. Including it in the research agent's context.")
+            #print(f"Researcher: ToolMessage content: {state_messages[-1]}")
+            #print("*"*100)
 
             messages = [
                         SystemMessage(content=RESEARCH_SYSTEM_PROMPT),
@@ -143,10 +151,10 @@ def research_agent_node(state: State):
             
         elif isinstance(state_messages[-1], AIMessage):
 
-            print("*"*100)
-            print(f"Researcher: Last message is a AIMessage. Including it in the research agent's context.")
-            print(f"Researcher: AIMessage latest content: {state_messages[-1]}")
-            print("*"*100)
+            #print("*"*100)
+            #print(f"Researcher: Last message is a AIMessage. Including it in the research agent's context.")
+            #print(f"Researcher: AIMessage latest content: {state_messages[-1]}")
+            #print("*"*100)
 
             messages = [
                         SystemMessage(content=RESEARCH_SYSTEM_PROMPT),
@@ -155,10 +163,10 @@ def research_agent_node(state: State):
                     ]
             
         elif isinstance(state_messages[-1], HumanMessage): # For HumanMessage, we can replace the last message with the enhanced query.:
-            print("*"*100)
-            print(f"Researcher: Last message is a HumanMessage. Including it in the research agent's context.")
-            print(f"Researcher HumanMessage latestcontent: {state_messages[-1]}")
-            print("*"*100)
+            #print("*"*100)
+            #print(f"Researcher: Last message is a HumanMessage. Including it in the research agent's context.")
+            #print(f"Researcher HumanMessage latestcontent: {state_messages[-1]}")
+            #print("*"*100)
 
             messages = [
                         SystemMessage(content=RESEARCH_SYSTEM_PROMPT),
@@ -167,10 +175,10 @@ def research_agent_node(state: State):
                     ]
 
     else:
-        print("*"*100)
-        print("Researcher: Using Full convo history....")
-        print(f"Researcher: Full convo last message content: {state_messages[-1]}")
-        print("*"*100)
+        #print("*"*100)
+        #print("Researcher: Using Full convo history....")
+        #print(f"Researcher: Full convo last message content: {state_messages[-1]}")
+        #print("*"*100)
 
         messages = [
             SystemMessage(content=RESEARCH_SYSTEM_PROMPT),
