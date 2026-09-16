@@ -5,3 +5,6 @@ langchain-google-genai
 python-dotenv
 tavily-python
 langchain-tavily
+structlog
+langchain-mcp-adapters
+langgraph-checkpoint-sqlite
