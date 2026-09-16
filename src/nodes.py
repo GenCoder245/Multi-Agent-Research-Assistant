@@ -1,24 +1,52 @@
 from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage, AIMessage
 
 from src.schemas import State, QueryRouting, SupervisorDecision
-from src.llm_models import llm
 from src.prompts import ROUTING_PROMPT, ENHANCER_PROMPT, RESEARCH_SYSTEM_PROMPT, SUPERVISOR_PROMPT
 from src.prompts import SUPERVISOR_HUMAN_FINAL_PROMPT, ANALYSER_PROMPT, SUMMARY_AGENT_PROMPT
 from src.tools import tools_list
 
 from langgraph.prebuilt import ToolNode
 
-router_llm = llm.with_structured_output(schema=QueryRouting,
-                                        method = 'json_schema')
-
-# research_llm = llm.bind_tools(tools_list)
-
-supervisor_llm = llm.with_structured_output(SupervisorDecision)
-
+llm = None
+router_llm = None
+supervisor_llm = None
 research_llm = None
 
+
+def _conversation_without_tool_calls(messages):
+    """Keep conversational text while removing tool protocol messages."""
+    conversation = []
+
+    for message in messages:
+        if isinstance(message, ToolMessage):
+            continue
+
+        if isinstance(message, AIMessage) and message.tool_calls:
+            if message.content:
+                conversation.append(AIMessage(content=message.content))
+            continue
+
+        conversation.append(message)
+
+    return conversation
+
+# To set the LLM Model for the graph nodes to use
+def set_language_model(language_model):
+    global llm, router_llm, supervisor_llm, research_llm
+
+    llm = language_model
+    router_llm = llm.with_structured_output(
+        schema=QueryRouting,
+        method="json_schema",
+    )
+    supervisor_llm = llm.with_structured_output(SupervisorDecision)
+
+    # If MCP tools list is available, it will later be binded
+    research_llm = llm.bind_tools(tools_list)    
+
 def initialize_mcp_tools(mcp_tools_list):
-    global research_llm
+    global research_llm, llm
+    
     research_llm = llm.bind_tools(mcp_tools_list)
     research_tools_node_mcp = ToolNode(tools=mcp_tools_list)
     return research_tools_node_mcp
@@ -47,8 +75,11 @@ def query_router_node(state:State):
 
 
 def query_enhancer_node(state:State):
-    messages = state["messages"]
 
+    # print(f"Enhancer: The messages before: {state['messages']}")
+    messages = _conversation_without_tool_calls(state["messages"])
+
+    # print(f"Enhancer: The messages after: {messages}")
     enhancer_response = llm.invoke([
         SystemMessage(content=ENHANCER_PROMPT),
         *messages
@@ -59,9 +90,22 @@ def query_enhancer_node(state:State):
     # The conversation history remains the actual conversation.
     # The enhanced query is an internal interpretation.
 
-    return {
-        "enhanced_query": enhancer_response.content[0]['text']
-    }
+    #print('<->'*100)
+    #print(f"Enhancer: The response: {enhancer_response}")
+    #print('<->'*100)
+    
+    content = enhancer_response.content
+    if isinstance(content, list):
+        content = "".join(
+            item.get("text", "")
+            for item in content
+            if isinstance(item, dict)
+        )
+
+    if not isinstance(content, str) or not content.strip():
+        raise ValueError("Query enhancer returned no text response.")
+
+    return {"enhanced_query": content.strip()}
 
 
 def supervisor_node(state: State):

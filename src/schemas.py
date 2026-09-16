@@ -6,11 +6,9 @@ from pydantic import BaseModel, Field
 class State(TypedDict):
     messages: Annotated[List[AnyMessage], add_messages]
 
-    # Added during query enhancement.
     enhanced_query: str | None
     needs_enhancement: bool
 
-    # Added during supervisor agent decision-making.
     next_node : str | None
     supervisor_reasoning: str | None
 

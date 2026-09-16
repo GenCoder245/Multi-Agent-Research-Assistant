@@ -1,6 +1,10 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
-from dotenv import load_dotenv
+from config import Settings
 
-load_dotenv()
+def get_language_model(llm_settings: Settings):
+    gemini_llm = ChatGoogleGenerativeAI(model = llm_settings.gemini_chat_model,
+                                        api_key = llm_settings.gemini_api_key,
+                                        max_retries = llm_settings.max_llm_retries,
+                                        )
 
-llm = ChatGoogleGenerativeAI(model="gemini-3.5-flash-lite")
+    return gemini_llm

@@ -1,18 +1,21 @@
 from langgraph.graph.state import StateGraph, START, END
 from langgraph.prebuilt import tools_condition
-from langgraph.checkpoint.memory import MemorySaver
 
-from src.nodes import query_router_node, query_enhancer_node, research_agent_node, supervisor_node, analysis_agent_node, summary_agent_node
+from src.nodes import query_router_node, query_enhancer_node, research_agent_node, supervisor_node, analysis_agent_node, summary_agent_node, set_language_model
 from src.nodes import research_tools_node
 from src.nodes import initialize_mcp_tools
 from src.route_functions import route_after_query_router, route_after_research, route_from_supervisor
 from src.schemas import State
 
 
-def get_graph(memory_checkpointer, mcp_tools_list):
+def get_graph(memory_checkpointer, language_model, mcp_tools_list):
+
+    # To set the LLM Model for the graph nodes to use
+    set_language_model(language_model)
 
     research_tools_node_with_mcp = None
-    if mcp_tools_list:
+    
+    if mcp_tools_list: # If MCP is unavailable, it will try Tavily using normal langchain calls.
         print(f"Graph: mcp_tools_list length: {len(mcp_tools_list)}")
         research_tools_node_with_mcp = initialize_mcp_tools(mcp_tools_list)
         # print(f"Graph: research_tools_node_with_mcp: {research_tools_node_with_mcp}")
