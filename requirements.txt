@@ -8,3 +8,7 @@ langchain-tavily
 structlog
 langchain-mcp-adapters
 langgraph-checkpoint-sqlite
+fastapi
+uvicorn[standard]
+streamlit
+requests

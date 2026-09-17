@@ -93,6 +93,7 @@ SUPERVISOR_PROMPT = """
     - You should not directly go to finish after calling Research or Analysis Agents alone.
     - After the Sumary Agent has completed its summarization,
     you must choose finish.
+    - The Current workflow stage must be 'summary' before you can choose 'finish' as the next_node.
     """
 
 # Final Prompt sent as HumanMessage after Supervisor gets results from Research Agent
@@ -101,6 +102,8 @@ SUPERVISOR_PROMPT = """
 SUPERVISOR_HUMAN_FINAL_PROMPT = """
     Based on the conversation and work completed so far,
     decide what should happen next.
+    You should not directly go to finish after calling Research or Analysis Agents alone.
+    After the Sumary Agent has completed its summarization only, you must choose finish.
 """
 
 
