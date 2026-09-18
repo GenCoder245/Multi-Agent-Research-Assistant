@@ -1,0 +1,46 @@
+services:
+  backend:
+    image: multi-agent-api:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: research-assistant-api
+    env_file:
+      - .env
+    environment:
+      SQLITE_DATABASE_NAME: data/checkpoints.sqlite
+    ports:
+      - "8000:8000"
+    volumes:
+      - checkpoints:/app/data
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          response = urllib.request.urlopen('http://127.0.0.1:8000/health');
+          raise SystemExit(0 if response.status == 200 else 1)
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  frontend:
+    image: multi-agent-ui:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    env_file:
+      - .env
+    environment:
+      API_BASE: http://backend:8000
+    ports:
+      - "8501:8501"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  checkpoints:
